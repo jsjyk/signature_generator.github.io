@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>모바일 서명 패드</title>
+    <style>
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f0f0f2; overflow: hidden; }
+        h2 { margin-bottom: 10px; color: #333; }
+        #canvas-container { border: 2px dashed #ccc; background: #fff; border-radius: 10px; touch-action: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        canvas { border-radius: 10px; cursor: crosshair; }
+        .controls { margin-top: 20px; display: flex; gap: 10px; }
+        button { padding: 12px 24px; font-size: 16px; border: none; border-radius: 5px; cursor: pointer; transition: 0.2s; font-weight: bold; }
+        .save-btn { background-color: #4CAF50; color: white; }
+        .clear-btn { background-color: #f44336; color: white; }
+        button:active { transform: scale(0.95); opacity: 0.8; }
+    </style>
+</head>
+<body>
+
+    <h2>서명을 해주세요</h2>
+    <div id="canvas-container">
+        <canvas id="sig-canvas"></canvas>
+    </div>
+
+    <div class="controls">
+        <button class="clear-btn" id="sig-clearBtn">모두 지우기</button>
+        <button class="save-btn" id="sig-submitBtn">PNG 다운로드</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("sig-canvas");
+        const ctx = canvas.getContext("2d");
+        const clearBtn = document.getElementById("sig-clearBtn");
+        const submitBtn = document.getElementById("sig-submitBtn");
+
+        // 화면 크기에 맞춰 캔버스 크기 조절
+        function resizeCanvas() {
+            canvas.width = window.innerWidth * 0.9;
+            canvas.height = window.innerHeight * 0.5;
+            ctx.lineWidth = 3;
+            ctx.lineCap = "round";
+            ctx.strokeStyle = "#000";
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        let drawing = false;
+
+        // 터치 및 마우스 이벤트 처리
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: clientX - rect.left, y: clientY - rect.top };
+        }
+
+        function startDrawing(e) {
+            drawing = true;
+            const pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+            e.preventDefault();
+        }
+
+        function draw(e) {
+            if (!drawing) return;
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            e.preventDefault();
+        }
+
+        function stopDrawing() { drawing = false; }
+
+        canvas.addEventListener("touchstart", startDrawing, {passive: false});
+        canvas.addEventListener("touchmove", draw, {passive: false});
+        canvas.addEventListener("touchend", stopDrawing);
+        
+        canvas.addEventListener("mousedown", startDrawing);
+        canvas.addEventListener("mousemove", draw);
+        canvas.addEventListener("mouseup", stopDrawing);
+
+        // 모두 지우기
+        clearBtn.addEventListener("click", () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        // PNG 다운로드 (배경 투명)
+        submitBtn.addEventListener("click", () => {
+            const dataUrl = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.href = dataUrl;
+            link.download = "signature.png";
+            link.click();
+        });
+    </script>
+</body>
+</html>
